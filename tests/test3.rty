@@ -1,0 +1,11 @@
+program ExampleProgram {
+    int a;
+    for (int i = 0; i < 10; i = i + 1) {
+        if (true)
+        then print(i);
+        fi;
+        if (false)
+        then read(a);
+        fi;
+    }
+}

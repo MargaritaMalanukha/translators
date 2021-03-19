@@ -1,0 +1,4 @@
+program ExampleProgram {
+    bool val = true;
+    bool b = val !== true;
+}
