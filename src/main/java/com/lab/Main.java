@@ -12,6 +12,7 @@ public class Main {
         String input = getFromFile("tests/test8.rty");
         LexicalAnalyzer lexicalAnalyzer = new LexicalAnalyzer(input);
         lexicalAnalyzer.analyze();
+
     }
 
     public static String getFromFile(String path) {

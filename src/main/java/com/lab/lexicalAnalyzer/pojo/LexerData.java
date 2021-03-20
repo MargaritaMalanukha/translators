@@ -1,4 +1,4 @@
-package com.lab.lexicalAnalyzer.constants;
+package com.lab.lexicalAnalyzer.pojo;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -11,5 +11,6 @@ public class LexerData {
     private final String lexeme;
     private final String token;
     private final Boolean isSuccessful;
+    private final int numChar;
 
 }
