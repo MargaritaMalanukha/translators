@@ -1,6 +1,6 @@
 package com.lab;
 
-import com.lab.lexicalAnalyzer.Analyzer;
+import com.lab.lexicalAnalyzer.LexicalAnalyzer;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -10,8 +10,8 @@ public class Main {
 
     public static void main(String[] args) {
         String input = getFromFile("tests/test8.rty");
-        Analyzer analyzer = new Analyzer(input);
-        analyzer.analyze();
+        LexicalAnalyzer lexicalAnalyzer = new LexicalAnalyzer(input);
+        lexicalAnalyzer.analyze();
     }
 
     public static String getFromFile(String path) {

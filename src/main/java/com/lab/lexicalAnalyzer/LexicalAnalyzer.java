@@ -1,5 +1,7 @@
 package com.lab.lexicalAnalyzer;
 
+import com.lab.lexicalAnalyzer.constants.LexerData;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -9,13 +11,16 @@ import static com.lab.lexicalAnalyzer.constants.AnalyzerTables.*;
  * @author Margarita Malanukha
  */
 
-public class Analyzer {
+public class LexicalAnalyzer {
 
     //текст программы, которые подается на вход анализатора
     private final String programInput;
 
     //выход лексичного анализатора
-    private final ArrayList<String> tableOfSymbols = new ArrayList<>();
+    private final ArrayList<LexerData> tableOfSymbols = new ArrayList<>();
+
+    //просмотр выхода лексичного анализатора
+    private final ArrayList<String> tableOfSymbolsView = new ArrayList<>();
 
     //количество строк входной программы
     private int numLine = 1;
@@ -27,7 +32,7 @@ public class Analyzer {
 
     private final ArrayList<String> identifiers = new ArrayList<>();
 
-    public Analyzer(String programInput) {
+    public LexicalAnalyzer(String programInput) {
         this.programInput = programInput;
     }
 
@@ -57,7 +62,7 @@ public class Analyzer {
                 currentLexeme.append(current);
             }
         }
-        tableOfSymbols.forEach(System.out::println);
+        tableOfSymbolsView.forEach(System.out::println);
         int status = isFailed ? 0 : 1;
         System.out.println("Lexer success status: " + status);
 
@@ -153,18 +158,21 @@ public class Analyzer {
     }
 
     private void addToOutputTable(int numLine, String lexeme, String token) {
-        tableOfSymbols.add(numLine + "        lexeme: " + lexeme + fillWithSpace(lexeme.length(), 20) +
+        tableOfSymbolsView.add(numLine + "        lexeme: " + lexeme + fillWithSpace(lexeme.length(), 20) +
                 "token: " + token);
+        tableOfSymbols.add(new LexerData(numLine, lexeme, token, true));
     }
 
     private void addToOutputTable(int numLine, String lexeme, String token, String value) {
-        tableOfSymbols.add(numLine + "        lexeme: " + lexeme + fillWithSpace(lexeme.length(), 20) +
+        tableOfSymbolsView.add(numLine + "        lexeme: " + lexeme + fillWithSpace(lexeme.length(), 20) +
                 "token: " + token + fillWithSpace(token.length(), 15) + "value: " + value);
+        tableOfSymbols.add(new LexerData(numLine, lexeme, token, true));
     }
 
     private void addToOutputTable(int numLine, String lexeme, String token, int id) {
-        tableOfSymbols.add(numLine + "        lexeme: " + lexeme + fillWithSpace(lexeme.length(), 20) +
+        tableOfSymbolsView.add(numLine + "        lexeme: " + lexeme + fillWithSpace(lexeme.length(), 20) +
                 "token: " + token + fillWithSpace(token.length(), 15) + "id: " + id);
+        tableOfSymbols.add(new LexerData(numLine, lexeme, token, true));
     }
 
     private String fillWithSpace(int strLength, int spaceLength) {
@@ -183,7 +191,8 @@ public class Analyzer {
     private void fail(String state, String lexeme) {
         String str = "Unexpected token \"" + lexeme + "\" at line " + numLine;
         if (state.equals("102")) str = str + "\nDid you mean \".12345\" (real value)?";
-        tableOfSymbols.add(str);
+        tableOfSymbolsView.add(str);
+        tableOfSymbols.add(new LexerData(numLine, lexeme, state, false));
         isFailed = true;
     }
 
