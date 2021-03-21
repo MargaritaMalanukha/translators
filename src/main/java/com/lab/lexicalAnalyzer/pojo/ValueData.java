@@ -1,15 +1,18 @@
 package com.lab.lexicalAnalyzer.pojo;
 
+
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.ToString;
 
 @Getter
 @AllArgsConstructor
 @EqualsAndHashCode(exclude = {"numChar"})
-public class IdentifierOrValueData {
+@ToString
+public class ValueData {
 
     private final int numChar;
-    private final String identifier;
+    private final String value;
 
 }

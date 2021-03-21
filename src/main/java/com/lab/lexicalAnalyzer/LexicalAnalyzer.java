@@ -1,7 +1,8 @@
 package com.lab.lexicalAnalyzer;
 
-import com.lab.lexicalAnalyzer.pojo.IdentifierOrValueData;
+import com.lab.lexicalAnalyzer.pojo.IdentifierData;
 import com.lab.lexicalAnalyzer.pojo.LexerData;
+import com.lab.lexicalAnalyzer.pojo.ValueData;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,7 +19,7 @@ public class LexicalAnalyzer {
     private final String programInput;
 
     //выход лексичного анализатора
-    private final ArrayList<LexerData> tableOfSymbols = new ArrayList<>();
+    public final ArrayList<LexerData> tableOfSymbols = new ArrayList<>();
 
     //просмотр выхода лексичного анализатора
     private final ArrayList<String> tableOfSymbolsView = new ArrayList<>();
@@ -31,7 +32,8 @@ public class LexicalAnalyzer {
 
     private boolean isFailed = false;
 
-    private final ArrayList<IdentifierOrValueData> identifiers = new ArrayList<>();
+    public final ArrayList<IdentifierData> identifiers = new ArrayList<>();
+    public final ArrayList<ValueData> values = new ArrayList<>();
 
     public LexicalAnalyzer(String programInput) {
         this.programInput = programInput;
@@ -83,16 +85,19 @@ public class LexicalAnalyzer {
             } else if ("boolval".equals(token)) {
                 String value = "1";
                 if (lexeme.equals("false")) value = "0";
+                values.add(new ValueData(numChar, value));
                 addToOutputTable(numLine, lexeme, token, value);
             } else if ("none".equals(token) && state.equals("2")) {
                 String finalLexeme = lexeme;
-                if (identifiers.stream().noneMatch(e -> e.getIdentifier().contains(finalLexeme))) {
-                    identifiers.add(new IdentifierOrValueData(numChar, lexeme));
+                if (identifiers.stream().noneMatch(e -> e.getIdentifier().equals(finalLexeme))) {
+                    identifiers.add(new IdentifierData(numChar, lexeme));
                 }
                 //numChar не попадает в equals&hashcode и проверка идет только по лексеме
-                int index = identifiers.indexOf(new IdentifierOrValueData(numChar, lexeme));
+                int index = identifiers.indexOf(new IdentifierData(numChar, lexeme));
+                token = "id";
                 addToOutputTable(numLine, lexeme, token, index);
             } else {
+                values.add(new ValueData(numChar, lexeme));
                 addToOutputTable(numLine, lexeme, token, lexeme);
             }
             putCharBack();

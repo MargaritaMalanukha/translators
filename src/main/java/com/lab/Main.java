@@ -1,6 +1,7 @@
 package com.lab;
 
 import com.lab.lexicalAnalyzer.LexicalAnalyzer;
+import com.lab.syntaxAnalyzer.SyntaxAnalyzer;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -9,10 +10,11 @@ import java.io.IOException;
 public class Main {
 
     public static void main(String[] args) {
-        String input = getFromFile("tests/test8.rty");
+        String input = getFromFile("tests/test9.rty");
         LexicalAnalyzer lexicalAnalyzer = new LexicalAnalyzer(input);
         lexicalAnalyzer.analyze();
-
+        SyntaxAnalyzer syntaxAnalyzer = new SyntaxAnalyzer(lexicalAnalyzer);
+        syntaxAnalyzer.parseProgram();
     }
 
     public static String getFromFile(String path) {

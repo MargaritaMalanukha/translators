@@ -1,0 +1,5 @@
+program ExampleProgram {
+    x = 17;
+    real r = 13.1324;
+    x = 0;
+}
