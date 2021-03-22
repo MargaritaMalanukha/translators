@@ -7,7 +7,7 @@ program ExampleProgram {
     if (true)
     then print(r);
     fi;
-    int rty = x + 2;
+    int rty = x * 2;
     int a = - 5;
     for (int i = 0; i to 12; i by i + 1) {
         if (true && true)

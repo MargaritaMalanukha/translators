@@ -27,7 +27,6 @@ public class SyntaxAnalyzer {
     private final String indent8 = "\t\t\t\t\t\t\t";
 
     private boolean assignIntOnly = false;
-    private int symbolsLeft = 1;
 
     public SyntaxAnalyzer(LexicalAnalyzer lexicalAnalyzer) {
         this.lexicalAnalyzer = lexicalAnalyzer;
@@ -116,11 +115,7 @@ public class SyntaxAnalyzer {
             parseIf();
             parseToken(";", "punct", indent3);
             return true;
-        } else if (lexicalAnalyzer.tableOfSymbols.size() == counter+symbolsLeft) {
-            return false;
         } else {
-            System.out.println(lexicalAnalyzer.tableOfSymbols.size());
-            failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
             return false;
         }
     }
@@ -216,16 +211,21 @@ public class SyntaxAnalyzer {
     //Expression = ArithmExpression | BoolExpr
     private void parseExpression() throws ParserException {
         System.out.println(indent5 + "parseExpression():");
-       // LexerData lexerData = getTableOfSymbolsElement();
+        LexerData lexerData = getTableOfSymbolsElement();
         if (!parseArithmExpression()) {
-            parseBoolExpression();
+            if (!assignIntOnly) parseBoolExpression();
+            else failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
         }
     }
 
-    private void parseIdentList() {
+    private void parseIdentList() throws ParserException {
         System.out.println(indent5 + "parseIdentList():");
         LexerData lexerData = getTableOfSymbolsElement();
-        while (lexerData.getToken().equals("id")) {
+        int iteration = 0;
+        LexerData finalLexerData = lexerData;
+        while (lexerData.getToken().equals("id") || lexicalAnalyzer.values
+                .stream().anyMatch(e -> e.getValue().equals(finalLexerData.getLexeme()))) {
+            iteration++;
             printLine(lexerData, indent5);
             counter++;
             lexerData = getTableOfSymbolsElement();
@@ -236,6 +236,7 @@ public class SyntaxAnalyzer {
             counter++;
             lexerData = getTableOfSymbolsElement();
         }
+        if (iteration == 0) failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
     }
 
     private void parseInit() throws ParserException {
@@ -282,22 +283,23 @@ public class SyntaxAnalyzer {
         if (lexerData.getLexeme().equals("{")) {
             printLine(lexerData, indent5);
             counter++;
-            symbolsLeft+=2;
             parseStatementList();
-            symbolsLeft-=2;
             parseToken("}", "braces_op", indent5);
+
             return;
         }
         parseStatement();
     }
 
     private void parseBoolExpr() throws ParserException {
-        LexerData lexerData = getTableOfSymbolsElement();
+        LexerData lexerData;
         if (!parseArithmExpression()){
+            lexerData = getTableOfSymbolsElement();
             failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
         }
         parseToken("to", "keyword", indent5);
         if (!parseArithmExpression()){
+            lexerData = getTableOfSymbolsElement();
             failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
         }
     }
@@ -342,12 +344,11 @@ public class SyntaxAnalyzer {
     private void parseBoolExpression() throws ParserException {
         System.out.println(indent6 + "parseBoolExpression():");
         LexerData lexerData = getTableOfSymbolsElement();
-        if (lexerData.getToken().equals("boolval")) {
+        if (lexerData.getToken().equals("boolval") || getTypeOfIdent(lexerData.getLexeme()).equals("bool")) {
             printLine(lexerData, indent6);
             counter++;
         } else if (parseArithmExpression()){
             lexerData = getTableOfSymbolsElement();
-
             if (!lexerData.getToken().equals("rel_op")) {
                 failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
             }
@@ -392,8 +393,9 @@ public class SyntaxAnalyzer {
             printLine(lexerData, indent8);
             lexerData = getTableOfSymbolsElement();
         }
-        if (lexerData.getToken().equals("id") || lexicalAnalyzer.values
-                .contains(new ValueData(counter, lexerData.getLexeme()))) {
+        if ((lexerData.getToken().equals("id") && lexicalAnalyzer.identifiers
+                .contains(new IdentifierData(0, lexerData.getLexeme())))
+                || lexicalAnalyzer.values.contains(new ValueData(counter, lexerData.getLexeme()))) {
             counter++;
             printLine(lexerData, indent8);
         } else if (lexerData.getToken().equals("(")) {
@@ -440,13 +442,14 @@ public class SyntaxAnalyzer {
                     .filter(e -> e.getLexeme().equals(identLexeme))
                     .findFirst()
                     .orElseThrow(NoSuchElementException::new);
+
             //какой тип находился перед этим
             int index = lexicalAnalyzer.tableOfSymbols.indexOf(lexerData);
-            LexerData initData = lexicalAnalyzer.tableOfSymbols.get(index);
+            LexerData initData = lexicalAnalyzer.tableOfSymbols.get(index-1);
 
             //является ли bool
-            if (initData.getToken().equals("boolval")) return "bool";
-            if (isDigitOnly(initData.getToken())) return "int";
+            if (initData.getLexeme().equals("bool")) return "bool";
+            if (isDigitOnly(lexerData.getLexeme())) return "int";
 
             //является ли real
             StringBuilder stringBuilder = new StringBuilder(initData.getLexeme());
@@ -455,7 +458,7 @@ public class SyntaxAnalyzer {
                 failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
             }
             stringBuilder.delete(index, index+1);
-            if (isDigitOnly(stringBuilder.toString())) return "real";
+            if (isDigitOnly(lexerData.getLexeme())) return "real";
 
             failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
             return "";
