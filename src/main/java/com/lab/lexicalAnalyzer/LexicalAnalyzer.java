@@ -137,7 +137,7 @@ public class LexicalAnalyzer {
         if (" \t".contains(ch)) return "ws";
         if (ch.equals("\n")) return "nl";
         if (ch.equals(";")) return "sc";
-        if ("!=*/<>&|".contains(ch)) return "op";
+        if ("!=*/<>&|,".contains(ch)) return "op";
         if ("+-".contains(ch)) return "sign";
         if ("{}()".contains(ch)) return "brackets";
         return "other";
