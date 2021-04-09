@@ -10,11 +10,11 @@ import java.io.IOException;
 public class Main {
 
     public static void main(String[] args) {
-        String input = getFromFile("tests/test3.rty");
+        String input = getFromFile("tests/test9.rty");
         LexicalAnalyzer lexicalAnalyzer = new LexicalAnalyzer(input);
         lexicalAnalyzer.analyze();
-      //  SyntaxAnalyzer syntaxAnalyzer = new SyntaxAnalyzer(lexicalAnalyzer);
-      //  syntaxAnalyzer.parseProgram();
+        SyntaxAnalyzer syntaxAnalyzer = new SyntaxAnalyzer(lexicalAnalyzer);
+        syntaxAnalyzer.parseProgram();
     }
 
     public static String getFromFile(String path) {

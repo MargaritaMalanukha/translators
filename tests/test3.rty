@@ -1,5 +1,5 @@
 program ExampleProgram {
-    int a;
+    bool a = 10 < 3;
     for (int i = 0; i to 10; i by i + 1) {
         if (true)
         then print(i);
@@ -7,5 +7,5 @@ program ExampleProgram {
         if (false)
         then read(a);
         fi;
-    }
+    };
 }

@@ -1,5 +1,5 @@
 program ExampleProgram {
-int a = 15;
-real b = 9.2439;
-bool c = true;
+    int a = 15;
+    real b = 9.2439;
+    bool c = true;
 }

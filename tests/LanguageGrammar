@@ -1,0 +1,59 @@
+Program = program ProgName ProgBody
+ProgName = Ident
+Ident = Letter {Letter | Digit}
+
+ProgBody = ’{’ StatementList ’}’
+StatementList = Statement { Statement }
+Statement = (Assign | Inp | Out | ForStatement | IfStatement) ‘;’
+
+Assign = (Type Ident | Ident) ’=’ Expression
+Type = int | real | bool
+
+Inp = read ’(’ IdenttList ’)’
+Out = print ’(’ IdenttList ’)’
+IdenttList = Ident {’,’ Ident}
+
+IfStatement = if ‘(‘ BoolExpr ‘)’ then DoBlock fi
+DoBlock = Statement | ’{’ StatementList ’}’
+
+ForStatement = for ‘(’ IndExpr; BoolExpr; ArithmExpr ‘)’ DoBlock
+IndExpr = Type Ident ’=’ ArithmExpression
+BoolExpr = Ident to ArithmExpression
+ArithmExpr = Ident by Ident AddOp | MultOp ArithmExpression
+
+Expression = ArithmExpression | BoolExpression
+BoolExpression = BoolConst | (ArithmExpression RelOp ArithmExpression {BoolOp BoolExpression})
+ArithmExpression = [Sign] Term | ArithmExpression { AddOp Term }
+Term = Factor { MultOp | ExpOp Factor }
+Factor = Ident | Literal | ’(’ ArithmExpression ’)’
+
+Literal = IntNumb | RealNumb | BoolConst;
+IntNumb = [Sign] UnsignedInt;
+RealNumb = [Sign] UnsignedReal;
+Sign = ’-’
+UnsignedInt = Digit {Digit}
+UnsignedReal = ’.’ UnsignedInt | UnsignedInt ’.’ UnsignedInt
+BoolConst = true | false
+
+SpecSymbols = ArithmOp | BoolOp | RelOp | BracketsOp | BracesOp | AssignOp | Punct
+ArithmOp = AddOp | MultOp | ExpOp
+AddOp = ’+’ | ’-’
+MultOp = ’*’ | ’/’
+ExpOp = ‘^’
+BoolOp= ‘&&’ | ‘||’
+RelOp = ’==’ | ’<= ’ | ’<’ | ’>’ | ’>=’ | ‘!=’
+BracketsOp = ’(’ | ’)’
+BracesOp = ‘{’ | ‘}’
+AssignOp = ’=’
+Punct = ’.’ | ’,’ | ’:’ | ’;’
+KeyWords = program | int | real | bool | for | if | then | fi | read | print | to | by
+Letter = ’a’ | ’b’ | ’c’ | ’d’ | ’e’ | ’f’ | ’g’ | ’h’ | ’i’ | ’j’
+| ’k’ | ’l’ | ’m’ | ’n’ | ’o’ | ’p’ | ’q’ | ’r’ | ’s’ | ’t’
+| ’u’ | ’v’ | ’w’ | ’x’ | ’y’ | ’z’
+Digit = ’0’ | ’1’ | ’2’ | ’3’ | ’4’ | ’5’ | ’6’ | ’7’ | ’8’ | ’9’
+SpecSsign = ’.’ | ’,’ | ’:’ | ’;’ | ’(’ | ’)’
+| ’=’ | ’+’ | ’-’ | ’*’ | ’/’ | ’<’ | ’>’
+|WhiteSpace | EndOfLine
+WhiteSpace = ’ ’ | ’\t’
+EndOfLine = ’\n’ | ’\r’ | ’\r\n’ | ’\n\r’
+EndOfFile = \0
