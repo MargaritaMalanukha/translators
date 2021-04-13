@@ -14,6 +14,8 @@ import com.lab.syntaxAnalyzer.exceptions.ParserException;
  */
 public class SyntaxAnalyzer {
 
+    private boolean FSuccess = true;
+
     private int counter = 0;
     private final LexicalAnalyzer lexicalAnalyzer;
     private final String indent1 = "";
@@ -29,6 +31,13 @@ public class SyntaxAnalyzer {
         this.lexicalAnalyzer = lexicalAnalyzer;
     }
 
+    public boolean postfixTranslator() {
+        if (lexicalAnalyzer.isLexerSuccessful()) {
+            return parseProgram();
+        }
+        return false;
+    }
+
     /**
      * first level function
      */
@@ -38,7 +47,7 @@ public class SyntaxAnalyzer {
     // Ident = Letter {Letter | Digit}
     // ProgBody = ’{’ StatementList ’}’
 
-    public void parseProgram(){
+    private boolean parseProgram(){
         System.out.println(indent1 + "parseProgram():");
         try {
             parseToken("program", "keyword", indent1);
@@ -51,10 +60,13 @@ public class SyntaxAnalyzer {
         } catch (ParserException e) {
             System.out.println(e.getMessage());
             System.out.println("Parser success status: 0.");
+            FSuccess = false;
         } catch (IndexOutOfBoundsException e) {
             System.out.println("Parser ERROR: No closing braces found!");
             System.out.println("Parser success status: 0.");
+            FSuccess = false;
         }
+        return FSuccess;
     }
 
     /**
@@ -108,7 +120,7 @@ public class SyntaxAnalyzer {
             parseAssign();
             parseToken(";", "punct", indent3);
             return true;
-        } else if (lexerData.getLexeme().equals("read")) {
+        } /*else if (lexerData.getLexeme().equals("read")) {
             parseRead();
             parseToken(";", "punct", indent3);
             return true;
@@ -124,7 +136,7 @@ public class SyntaxAnalyzer {
             parseIf();
             parseToken(";", "punct", indent3);
             return true;
-        } else {
+        }*/ else {
             return false;
         }
     }
@@ -477,5 +489,4 @@ public class SyntaxAnalyzer {
     private LexerData getTableOfSymbolsElement() {
         return lexicalAnalyzer.tableOfSymbols.get(counter);
     }
-
 }

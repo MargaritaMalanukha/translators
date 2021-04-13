@@ -10,11 +10,17 @@ import java.io.IOException;
 public class Main {
 
     public static void main(String[] args) {
-        String input = getFromFile("tests/test9.rty");
+        String input = getFromFile("tests/test10.rty");
         LexicalAnalyzer lexicalAnalyzer = new LexicalAnalyzer(input);
         lexicalAnalyzer.analyze();
         SyntaxAnalyzer syntaxAnalyzer = new SyntaxAnalyzer(lexicalAnalyzer);
-        syntaxAnalyzer.parseProgram();
+        boolean isSuccessful = syntaxAnalyzer.postfixTranslator();
+        if (isSuccessful) {
+
+        } else {
+            System.out.println("Mistake on translator's stage. Cannot start interpretation.");
+            System.out.println("Exiting the program...");
+        }
     }
 
     public static String getFromFile(String path) {

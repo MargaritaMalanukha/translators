@@ -7,11 +7,13 @@ import lombok.ToString;
 
 @Getter
 @AllArgsConstructor
-@EqualsAndHashCode(exclude = {"numChar"})
+@EqualsAndHashCode(exclude = {"numChar", "index", "type"})
 @ToString
 public class IdentifierData {
 
+    private final int index;
     private final int numChar;
+    private final String type;
     private final String identifier;
 
 }

@@ -35,6 +35,8 @@ public class LexicalAnalyzer {
     public final ArrayList<IdentifierData> identifiers = new ArrayList<>();
     public final ArrayList<ValueData> values = new ArrayList<>();
 
+    private final String UNDEFINED = "type_undefined";
+
     public LexicalAnalyzer(String programInput) {
         this.programInput = programInput;
     }
@@ -90,10 +92,10 @@ public class LexicalAnalyzer {
             } else if ("none".equals(token) && state.equals("2")) {
                 String finalLexeme = lexeme;
                 if (identifiers.stream().noneMatch(e -> e.getIdentifier().equals(finalLexeme))) {
-                    identifiers.add(new IdentifierData(numChar, lexeme));
+                    identifiers.add(new IdentifierData(numLine, numChar, UNDEFINED, lexeme));
                 }
                 //numChar не попадает в equals&hashcode и проверка идет только по лексеме
-                int index = identifiers.indexOf(new IdentifierData(numChar, lexeme));
+                int index = identifiers.indexOf(new IdentifierData(numLine, numChar, UNDEFINED, lexeme));
                 token = "id";
                 addToOutputTable(numLine, lexeme, token, index);
             } else {
@@ -202,6 +204,10 @@ public class LexicalAnalyzer {
         tableOfSymbolsView.add(str);
         tableOfSymbols.add(new LexerData(numLine, lexeme, state, false, numChar));
         isFailed = true;
+    }
+
+    public boolean isLexerSuccessful() {
+        return !isFailed;
     }
 
 

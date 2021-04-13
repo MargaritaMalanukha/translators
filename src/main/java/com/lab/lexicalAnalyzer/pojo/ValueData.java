@@ -12,7 +12,8 @@ import lombok.ToString;
 @ToString
 public class ValueData {
 
-    private final int numChar;
-    private final String value;
+    private final int index;
+    private int numChar;
+    private String value;
 
 }
