@@ -15,6 +15,8 @@ import static com.lab.lexicalAnalyzer.constants.AnalyzerTables.*;
 
 public class LexicalAnalyzer {
 
+
+
     //текст программы, которые подается на вход анализатора
     private final String programInput;
 
@@ -34,8 +36,6 @@ public class LexicalAnalyzer {
 
     public final ArrayList<IdentifierData> identifiers = new ArrayList<>();
     public final ArrayList<ValueData> values = new ArrayList<>();
-
-    private final String UNDEFINED = "type_undefined";
 
     public LexicalAnalyzer(String programInput) {
         this.programInput = programInput;

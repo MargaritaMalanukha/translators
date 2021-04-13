@@ -1,19 +1,30 @@
 package com.lab.lexicalAnalyzer.pojo;
 
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
+import lombok.*;
 
 @Getter
+@Setter
 @AllArgsConstructor
-@EqualsAndHashCode(exclude = {"numChar", "index", "type"})
+@EqualsAndHashCode(exclude = {"idxId", "type", "value"})
 @ToString
 public class IdentifierData {
 
-    private final int index;
-    private final int numChar;
-    private final String type;
-    private final String identifier;
+    private static final String UNDEFINED = "undefined";
+
+    //ідентифікатор (лексема)
+    private String id;
+    //індекс ідентифікатора в таблиці ідентифікаторів
+    private int idxId;
+    //тип идентификатору, если тип не визначений, то має значення "undefined"
+    private String type;
+    //значення ідентифікатору, якщо не визначене, то має значення "undefined"
+    private String value;
+
+    public IdentifierData(String id, int idxId) {
+        this.id = id;
+        this.idxId = idxId;
+        type = UNDEFINED;
+        value = UNDEFINED;
+    }
 
 }
