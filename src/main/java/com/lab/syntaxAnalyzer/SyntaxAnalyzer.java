@@ -5,16 +5,19 @@ import com.lab.lexicalAnalyzer.pojo.LexerData;
 import com.lab.lexicalAnalyzer.pojo.ValueData;
 import com.lab.syntaxAnalyzer.exceptions.ParserException;
 
+import java.util.ArrayList;
+
 
 /**
- * Изменения:
- * 1. Синтаксичный анализатор полностью соответствует грамматике.
- * 2. Переделан Assign как Type Ident | Ident.
- * 3. Переделан Expression как Expression = ArithmExpression | BoolExpression.
+ * Лабораторная №3:
+ * 1. ArithmExpression = [Sign] Term { AddOp Term }, решена проблема со скобками.
+ * 2. Написание транслятора для функций BoolExpression, ArithmExpression (Term, Factor)
  */
 public class SyntaxAnalyzer {
 
     private boolean FSuccess = true;
+
+    public ArrayList<LexerData> postfixCode;
 
     private int counter = 0;
     private final LexicalAnalyzer lexicalAnalyzer;
@@ -29,6 +32,7 @@ public class SyntaxAnalyzer {
 
     public SyntaxAnalyzer(LexicalAnalyzer lexicalAnalyzer) {
         this.lexicalAnalyzer = lexicalAnalyzer;
+        postfixCode = new ArrayList<>();
     }
 
     public boolean postfixTranslator() {
@@ -147,16 +151,25 @@ public class SyntaxAnalyzer {
 
     // Assign = (Type Ident | Ident) ’=’ Expression
     private void parseAssign() throws ParserException {
+        System.out.println(indent4 + "parseAssign():");
         try {
             parseType();
         } catch (ParserException ignored) { }
 
-        System.out.println(indent4 + "parseAssign():");
+
         LexerData lexerData = getTableOfSymbolsElement();
         counter++;
         printLine(lexerData, indent4);
-        if (parseToken("=", "assign_op", indent4)) {
+        //Добавить Ident в ПОЛИЗ
+        postfixCode.add(lexerData);
+
+        lexerData = getTableOfSymbolsElement();
+        if (lexerData.getLexeme().equals("=")) {
+            counter++;
+            printLine(lexerData, indent4);
             parseExpression();
+            //Добавить AssignOp в ПОЛИЗ
+            postfixCode.add(lexerData);
         } else {
             failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
         }
@@ -254,10 +267,17 @@ public class SyntaxAnalyzer {
     private void parseExpression() throws ParserException {
         System.out.println(indent5 + "parseExpression():");
         int returnCounterIfParseArithmIsWrong = counter;
-        parseArithmExpression();
+        int indexCounter = postfixCode.size();
+
+        boolean isArithmCorrect = parseArithmExpression();
+
         LexerData lexerData = getTableOfSymbolsElement();
-        if (!lexerData.getLexeme().equals(";")) {
+        if (!lexerData.getLexeme().equals(";") || !isArithmCorrect) {
+            //Откат ArithmExpression
             counter = returnCounterIfParseArithmIsWrong;
+            for (int i = indexCounter; i < postfixCode.size(); i++) {
+                postfixCode.remove(i);
+            }
             System.out.println(indent5 + "parseExpression: impossible to parse ArithmExpression. Parsing BoolExpression...");
             parseBoolExpression();
         }
@@ -355,7 +375,7 @@ public class SyntaxAnalyzer {
      * sixth+ level functions
      */
 
-    // ArithmExpression = [Sign] Term | ArithmExpression { AddOp Term }
+    // ArithmExpression = [Sign] Term { AddOp Term }
     // Sign = '-'
     private boolean parseArithmExpression() {
         try {
@@ -364,27 +384,18 @@ public class SyntaxAnalyzer {
                 parseToken("-", "add_op", indent6);
             } catch (ParserException ignored) { }
 
-            int returnCounterIfParseArithmIsWrong = counter;
-            try {
-                parseTerm();
-            } catch (ParserException e) {
-                counter = returnCounterIfParseArithmIsWrong;
-                if (!parseArithmExpression()) {
-                    LexerData lexerData = getTableOfSymbolsElement();
-                    failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
-                }
-            }
+            parseTerm();
 
             LexerData lexerData = getTableOfSymbolsElement();
-            while (true) {
-               if (lexerData.getToken().equals("add_op")) {
-                   counter++;
-                   printLine(lexerData, indent6);
-                   parseTerm();
-                   lexerData = getTableOfSymbolsElement();
-               } else {
-                   break;
-               }
+            while (lexerData.getToken().equals("add_op")) {
+                counter++;
+                printLine(lexerData, indent6);
+                parseTerm();
+
+                //добавить AddOp в ПОЛИЗ
+                postfixCode.add(lexerData);
+
+                lexerData = getTableOfSymbolsElement();
             }
         } catch (ParserException e) {
             return false;
@@ -401,25 +412,35 @@ public class SyntaxAnalyzer {
         if (lexerData.getToken().equals("boolval")) {
             printLine(lexerData, indent6);
             counter++;
+            //добавить BoolConst в ПОЛИЗ
+            postfixCode.add(lexerData);
         } else if (parseArithmExpression()){
-            lexerData = getTableOfSymbolsElement();
+            LexerData lexerDataRel = getTableOfSymbolsElement();
 
-            if (!lexerData.getToken().equals("rel_op")) {
-                failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
+            if (!lexerDataRel.getToken().equals("rel_op")) {
+                failParse(lexerDataRel.getNumLine(), lexerDataRel.getLexeme(), lexerDataRel.getToken());
             }
             counter++;
-            printLine(lexerData, indent6);
+            printLine(lexerDataRel, indent6);
+
             if (!parseArithmExpression()) {
                 lexerData = getTableOfSymbolsElement();
                 failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
             }
             lexerData = getTableOfSymbolsElement();
 
+            //добавить RelOp в ПОЛИЗ
+            postfixCode.add(lexerDataRel);
+
             while (lexerData.getToken().equals("bool_op")) {
                 counter++;
                 printLine(lexerData, indent6);
                 parseBoolExpression();
+
+                //добавить BoolOp в ПОЛИЗ
+                postfixCode.add(lexerData);
                 lexerData = getTableOfSymbolsElement();
+
             }
         } else {
             failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
@@ -436,6 +457,8 @@ public class SyntaxAnalyzer {
                 counter++;
                 printLine(lexerData, indent7);
                 parseFactor();
+                //Добавить MultOp|ExpOp в ПОЛИЗ
+                postfixCode.add(lexerData);
             } else {
                 break;
             }
@@ -448,17 +471,20 @@ public class SyntaxAnalyzer {
         LexerData lexerData = getTableOfSymbolsElement();
 
         if ((lexerData.getToken().equals("id"))
-                || lexicalAnalyzer.values.contains(new ValueData(counter, lexerData.getLexeme()))) {
+                || lexicalAnalyzer.values.contains(new ValueData(lexerData.getLexeme(), lexerData.getToken(), counter))) {
             counter++;
             printLine(lexerData, indent8);
+            //Добавить Ident|Value в ПОЛИЗ
+            postfixCode.add(lexerData);
         } else if (lexerData.getLexeme().equals("(")) {
             counter++;
             printLine(lexerData, indent8);
-            System.out.println(parseArithmExpression());
-            System.out.println(getTableOfSymbolsElement().getLexeme());
+            if (!parseArithmExpression()){
+                lexerData = getTableOfSymbolsElement();
+                failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
+            }
             parseToken(")", "brackets_op", indent8);
         } else {
-
             failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
         }
     }
@@ -488,5 +514,9 @@ public class SyntaxAnalyzer {
 
     private LexerData getTableOfSymbolsElement() {
         return lexicalAnalyzer.tableOfSymbols.get(counter);
+    }
+
+    public LexicalAnalyzer getLexicalAnalyzer() {
+        return lexicalAnalyzer;
     }
 }

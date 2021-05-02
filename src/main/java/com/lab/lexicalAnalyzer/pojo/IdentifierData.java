@@ -4,6 +4,7 @@ import lombok.*;
 
 @Getter
 @Setter
+@NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(exclude = {"idxId", "type", "value"})
 @ToString
@@ -27,4 +28,7 @@ public class IdentifierData {
         value = UNDEFINED;
     }
 
+    public boolean equalsByIdANDIdxId(String id, int idxId) {
+        return this.id.equals(id) && this.idxId == idxId;
+    }
 }

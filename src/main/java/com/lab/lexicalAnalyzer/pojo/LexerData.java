@@ -1,20 +1,18 @@
 package com.lab.lexicalAnalyzer.pojo;
 
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
+import lombok.*;
 
+@Setter
 @Getter
 @AllArgsConstructor
 @ToString
 @EqualsAndHashCode
+@NoArgsConstructor
 public class LexerData {
 
-    private final int numLine;
-    private final String lexeme;
-    private final String token;
-    private final Boolean isSuccessful;
-    private final int numChar;
+    private int numLine;
+    private String lexeme;
+    private String token;
+    private int numChar;
 
 }

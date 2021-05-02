@@ -5,6 +5,7 @@ import lombok.*;
 
 @Getter
 @Setter
+@NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(exclude = {"idxConst", "type", "value"})
 @ToString
@@ -21,11 +22,11 @@ public class ValueData {
     //значення константи
     private String value;
 
-    public ValueData(String Const, int idxConst) {
+    public ValueData(String Const, String token, int idxConst) {
         this.Const = Const;
         this.idxConst = idxConst;
-        type = UNDEFINED;
-        value = UNDEFINED;
+        type = token;
+        value = Const;
     }
 
 }

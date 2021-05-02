@@ -1,3 +1,7 @@
 program Example {
-    int a = 1 * 9;
+    int a = 1 * 9 ^ 2;
+    real r = 94.5 + 3;
+    real b = (2 + 3) * (15 - 13) ^ 2;
+    bool boo = 6 > 3 && b == 100 || a < 0;
+    real division = b / 5;
 }

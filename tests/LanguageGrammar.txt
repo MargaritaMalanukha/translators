@@ -23,7 +23,7 @@ ArithmExpr = Ident by Ident AddOp | MultOp ArithmExpression
 
 Expression = ArithmExpression | BoolExpression
 BoolExpression = BoolConst | (ArithmExpression RelOp ArithmExpression {BoolOp BoolExpression})
-ArithmExpression = [Sign] Term | ArithmExpression { AddOp Term }
+ArithmExpression = [Sign] Term { AddOp Term }
 Term = Factor { MultOp | ExpOp Factor }
 Factor = Ident | Literal | ’(’ ArithmExpression ’)’
 
