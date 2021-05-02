@@ -60,6 +60,11 @@ public class Interpreter {
             for (int i = 0; i < identifiers.size(); i++) {
                 if (identifiers.get(i).getId().equals(identifier.getLexeme())) {
                     IdentifierData identifierData = identifiers.get(i);
+                    if (!identifierData.getType().equals(lexValue.getToken())) {
+                        LexerData lexerData1 = new LexerData();
+                        lexerData1.setToken(identifierData.getType());
+                        failRunTime("wrong type", lexerData1, lexValue, lexerData);
+                    }
                     identifierData.setType(lexValue.getToken());
                     identifierData.setValue(lexValue.getLexeme());
                     isChanged = true;
@@ -276,7 +281,7 @@ public class Interpreter {
                 throw new PostfixException(message);
             }
             case "not initialized variable": {
-                String message = "Variable '" + lexemeToApply.getToken() + "' might not have been initialized.";
+                String message = "Variable '" + lexemeToApply.getLexeme() + "' might not have been initialized.";
                 throw new PostfixException(message);
             }
             case "zero division": {

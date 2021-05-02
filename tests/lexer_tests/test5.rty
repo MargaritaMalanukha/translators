@@ -1,4 +1,3 @@
 program ExampleProgram {
-    bool val = true;
-    bool b = val !== true;
+    real b = 17.5 / 0;
 }

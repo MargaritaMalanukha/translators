@@ -1,11 +1,13 @@
 package com.lab.syntaxAnalyzer;
 
 import com.lab.lexicalAnalyzer.LexicalAnalyzer;
+import com.lab.lexicalAnalyzer.pojo.IdentifierData;
 import com.lab.lexicalAnalyzer.pojo.LexerData;
 import com.lab.lexicalAnalyzer.pojo.ValueData;
 import com.lab.syntaxAnalyzer.exceptions.ParserException;
 
 import java.util.ArrayList;
+import java.util.NoSuchElementException;
 
 
 /**
@@ -257,6 +259,17 @@ public class SyntaxAnalyzer {
         if (lexerData.getLexeme().equals("int") || lexerData.getLexeme().equals("real")
                 || lexerData.getLexeme().equals("bool")) {
             counter++;
+
+            //задаем переменной следующей за типом заданный тип
+            LexerData lexerData1 = getTableOfSymbolsElement();
+            IdentifierData identifierData = lexicalAnalyzer.identifiers.stream()
+                    .filter(e -> e.getId().equals(lexerData1.getLexeme())).findFirst().orElseThrow(NoSuchElementException::new);
+            identifierData.setType(lexerData.getLexeme());
+
+            if (lexerData.getLexeme().equals("bool")) {
+                identifierData.setType("boolval");
+            }
+
             printLine(lexerData, indent5);
         } else {
             failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
