@@ -37,6 +37,7 @@ public class Interpreter {
                 configToPrint(i++, lexerData);
             }
             System.out.println("Interpreter success status: 1.");
+            stack.forEach(System.out::println);
         } catch (RuntimeException e) {
             System.out.println("Interpreter success status: 0.");
             return false;
@@ -60,7 +61,8 @@ public class Interpreter {
             for (int i = 0; i < identifiers.size(); i++) {
                 if (identifiers.get(i).getId().equals(identifier.getLexeme())) {
                     IdentifierData identifierData = identifiers.get(i);
-                    if (!identifierData.getType().equals(lexValue.getToken())) {
+                    //если идентификатор и значение имеют разный тип, но при этом это не real и int
+                    if (!identifierData.getType().equals(lexValue.getToken()) && !(identifierData.getType().equals("real") && lexValue.getToken().equals("int"))) {
                         LexerData lexerData1 = new LexerData();
                         lexerData1.setToken(identifierData.getType());
                         failRunTime("wrong type", lexerData1, lexValue, lexerData);
