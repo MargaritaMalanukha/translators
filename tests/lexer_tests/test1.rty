@@ -1,5 +1,10 @@
 program ExampleProgram {
-    int a = 15;
-    real b = 9.2439;
-    bool c = true;
+    int a = 4;
+    if (6 >= 6)
+    then a = -5;
+    fi;
+    if (false)
+    then a = a + 3;
+    fi;
+    print(a);
 }

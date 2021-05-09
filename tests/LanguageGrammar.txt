@@ -13,7 +13,7 @@ Inp = read ’(’ IdenttList ’)’
 Out = print ’(’ IdenttList ’)’
 IdenttList = Ident {’,’ Ident}
 
-IfStatement = if ‘(‘ BoolExpr ‘)’ then DoBlock fi
+IfStatement = if ‘(‘ BoolExpression ‘)’ then DoBlock fi
 DoBlock = Statement | ’{’ StatementList ’}’
 
 ForStatement = for ‘(’ IndExpr; BoolExpr; ArithmExpr ‘)’ DoBlock

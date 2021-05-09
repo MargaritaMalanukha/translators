@@ -15,4 +15,9 @@ public class LexerData {
     private String token;
     private int numChar;
 
+    public LexerData(String lexeme, String token) {
+        this.lexeme = lexeme;
+        this.token = token;
+    }
+
 }

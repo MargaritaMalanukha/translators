@@ -6,9 +6,11 @@ import com.lab.lexicalAnalyzer.pojo.IdentifierData;
 import com.lab.lexicalAnalyzer.pojo.LexerData;
 import com.lab.lexicalAnalyzer.pojo.ValueData;
 import com.lab.syntaxAnalyzer.SyntaxAnalyzer;
+import com.lab.syntaxAnalyzer.exceptions.ParserException;
 
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
+import java.util.Scanner;
 import java.util.Stack;
 
 public class Interpreter {
@@ -17,27 +19,49 @@ public class Interpreter {
     private final ArrayList<IdentifierData> identifiers;
     private final ArrayList<ValueData> values;
 
+    public final ArrayList<String> outputList;
+
     private Stack<LexerData> stack;
+
+    private int instrNum = 0; //текущий номер инструкции
 
     public Interpreter(SyntaxAnalyzer syntaxAnalyzer) {
         this.syntaxAnalyzer = syntaxAnalyzer;
         this.identifiers = syntaxAnalyzer.getLexicalAnalyzer().identifiers;
         this.values = syntaxAnalyzer.getLexicalAnalyzer().values;
         stack = new Stack<>();
+        outputList = new ArrayList<>();
     }
 
     public boolean postfixProcessing() {
         try {
-            int i = 0;
-            for (LexerData lexerData : syntaxAnalyzer.postfixCode) {
+            int nextInstr, numberOfSteps = 0;
+            int size = syntaxAnalyzer.postfixCode.size();
+            while (instrNum < size) {
+                if (numberOfSteps > 10000) {
+                    throw new PostfixException("Cannot interpreter such a large number of steps!");
+                }
+
+                LexerData lexerData = syntaxAnalyzer.postfixCode.get(instrNum);
+                numberOfSteps++;
                 String token = lexerData.getToken();
-                if (token.equals("id") || token.equals("real") || token.equals("int") || token.equals("boolval")) {
+                if (token.equals("id") || token.equals("real") || token.equals("int") || token.equals("boolval") || token.equals("label")) {
                     stack.push(lexerData);
-                } else doIt(lexerData);
-                configToPrint(i++, lexerData);
+                    nextInstr = instrNum + 1;
+                } else if (token.equals("jump") || token.equals("jf") || token.equals("colon")) {
+                    nextInstr = doJumps(lexerData);
+                } else if (token.equals("OUT") || token.equals("INP")) {
+                    processingInputOutput(lexerData);
+                    nextInstr = instrNum + 1;
+                } else {
+                    doIt(lexerData);
+                    nextInstr = instrNum + 1;
+                }
+                configToPrint(instrNum, lexerData);
+                instrNum = nextInstr;
             }
+            System.out.println("Total steps operated: " + numberOfSteps);
             System.out.println("Interpreter success status: 1.");
-            stack.forEach(System.out::println);
         } catch (RuntimeException e) {
             System.out.println("Interpreter success status: 0.");
             return false;
@@ -47,6 +71,125 @@ public class Interpreter {
             return false;
         }
         return true;
+    }
+
+    private void processingInputOutput(LexerData lexerData) throws PostfixException {
+        switch (lexerData.getToken()) {
+            case "INP": {
+                Scanner scanner = new Scanner(System.in);
+                String input = scanner.nextLine();
+                String token = defineType(input);
+                stack.push(new LexerData(lexerData.getNumChar(), input, token, lexerData.getNumLine()));
+                doIt(new LexerData("=", "assign_op"));
+                break;
+            }
+            case "OUT": {
+                LexerData lexIdentifier = stack.pop();
+                IdentifierData identifier = identifiers.stream()
+                        .filter(e -> e.getId().equals(lexIdentifier.getLexeme()))
+                        .findFirst()
+                        .orElseThrow(NoSuchElementException::new);
+                outputList.add("\t" + identifier.getId() + "=" + identifier.getValue());
+            }
+        }
+    }
+
+    private String defineType(String input) throws PostfixException {
+        if (input.equals("true") || input.equals("false")) {
+            return "boolval";
+        }
+        try {
+            Double.parseDouble(input);
+            if (input.contains(".")) {
+                return "real";
+            } else return "int";
+        } catch (Exception e) {
+            LexerData lexerData = new LexerData();
+            lexerData.setLexeme(input);
+            failRunTime("wrong input", lexerData, new LexerData(), new LexerData());
+        }
+        return "";
+    }
+
+    private int doJumps(LexerData lexerData) throws PostfixException {
+        int nextInstr = 0;
+        switch (lexerData.getToken()) {
+            case "jump":
+                nextInstr = processing_JUMP();
+                break;
+            case "colon":
+                nextInstr = processing_colon();
+                break;
+            case "jf":
+                nextInstr = processing_JF();
+                break;
+        }
+        return nextInstr;
+    }
+
+    private int processing_JUMP() throws PostfixException {
+        //снимаем с вершины стека элемент
+        LexerData lexerData = stack.pop();
+        //если это метка и она существует, следующая инструкция равна её значению
+        int nextInstr = 0;
+        if (lexerData.getToken().equals("label")) {
+            nextInstr = syntaxAnalyzer.tableOfLabels.stream()
+                    .filter(e -> e.getLabel().equals(lexerData.getLexeme()))
+                    .findFirst()
+                    .orElseThrow(NoSuchElementException::new)
+                    .getValue();
+        } else {
+            failRunTime("not a label", lexerData, new LexerData(), new LexerData());
+        }
+        return nextInstr;
+    }
+
+    private int processing_colon() {
+        //снимаем с вершины стека метку
+        stack.pop();
+        //увеличиваем номер текущей инструкции на 1
+        return instrNum + 1;
+    }
+
+    private int processing_JF() throws PostfixException {
+        //метка
+        LexerData label = stack.pop();
+        //результат вычисления BoolExpression
+        LexerData bool = stack.pop();
+
+        if (bool.getToken().equals("boolval") || bool.getToken().equals("id")) {
+            String value;
+            //если результат BoolExpression - идентификатор, то находим его значение в таблице
+            if (bool.getToken().equals("id")) {
+                value = identifiers.stream()
+                        .filter(e -> e.getId().equals(bool.getLexeme()))
+                        .findFirst()
+                        .orElseThrow(NoSuchElementException::new)
+                        .getValue();
+            }
+            //если это - булевое значение, то оно и является значением
+            else {
+                value = bool.getLexeme();
+            }
+
+            //если значение = false, то следующая инструкция - значение метки
+            if (value.equals("false")) {
+                return syntaxAnalyzer.tableOfLabels.stream()
+                        .filter(e -> e.getLabel().equals(label.getLexeme()))
+                        .findFirst()
+                        .orElseThrow(NoSuchElementException::new)
+                        .getValue();
+            }
+            //если значение = true, то следующая инструкция - текущая + 1
+            else if (value.equals("true")) {
+                return instrNum + 1;
+            } else {
+                failRunTime("not a boolval", label, new LexerData(), new LexerData());
+            }
+        } else {
+            failRunTime("not a boolval", label, new LexerData(), new LexerData());
+        }
+        return 0;
     }
 
     private void doIt(LexerData lexerData) throws PostfixException {
@@ -67,7 +210,6 @@ public class Interpreter {
                         lexerData1.setToken(identifierData.getType());
                         failRunTime("wrong type", lexerData1, lexValue, lexerData);
                     }
-                    identifierData.setType(lexValue.getToken());
                     identifierData.setValue(lexValue.getLexeme());
                     isChanged = true;
                 }
@@ -190,6 +332,7 @@ public class Interpreter {
     }
 
     private double parseRealIntValue(PostfixData postfixData) throws PostfixException {
+
         double result = 0;
         if (postfixData.getType().equals("int")) {
             try {
@@ -276,25 +419,38 @@ public class Interpreter {
     }
 
     private void failRunTime(String error, LexerData leftExpression, LexerData rightExpression, LexerData lexemeToApply) throws PostfixException {
+        String message = "Undefined exception occured!";
         switch (error) {
             case "wrong type": {
-                String message = "Cannot apply operand '" + lexemeToApply.getLexeme() + "' to types " + leftExpression.getToken() + " and "
+                message = "Cannot apply operand '" + lexemeToApply.getLexeme() + "' to types " + leftExpression.getToken() + " and "
                         + rightExpression.getToken() + ".";
-                throw new PostfixException(message);
+                break;
             }
             case "not initialized variable": {
-                String message = "Variable '" + lexemeToApply.getLexeme() + "' might not have been initialized.";
-                throw new PostfixException(message);
+                message = "Variable '" + lexemeToApply.getLexeme() + "' might not have been initialized.";
+                break;
             }
             case "zero division": {
-                String message = "Zero division occured: " + leftExpression.getLexeme() + lexemeToApply.getLexeme() + rightExpression.getLexeme() + ".";
-                throw new PostfixException(message);
+                message = "Zero division occured: " + leftExpression.getLexeme() + lexemeToApply.getLexeme() + rightExpression.getLexeme() + ".";
+                break;
             }
             case "parse error": {
-                String message = "Cannot parse value '" + leftExpression.getLexeme() + "' with token '" + leftExpression.getToken() + "'.";
-                throw new PostfixException(message);
+                message = "Cannot parse value '" + leftExpression.getLexeme() + "' with token '" + leftExpression.getToken() + "'.";
+                break;
+            }
+            case "not a label": {
+                message = "Cannot interpreter as a label lexeme '" + leftExpression.getLexeme() + "' with token '" + leftExpression.getToken() + "'.";
+                break;
+            }
+            case "not a boolval": {
+                message = "Cannot interpreter as a bool value lexeme '" + leftExpression.getLexeme() + "' with token '" + leftExpression.getToken() + "'.";
+                break;
+            } case "wrong input": {
+                message = "Cannot interpreter your input '" + leftExpression.getLexeme() + "'.";
+                break;
             }
         }
+        throw new PostfixException(message);
     }
 
     private void toTableOfValues(String value, String type) {

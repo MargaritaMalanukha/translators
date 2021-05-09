@@ -4,20 +4,17 @@ program ExampleProgram {
     real r = 13.1324;
     real k = 1908;
     real d = 94828;
-    bool b = x > 14 && c < 2 || r > 1 && d >= 1 && c == x + c * 2;
-    x = 0;
-    k = x ^ 3;
 
     read(x, r);
-    print(x);
+    print(x, r);
 
     int rty = x * 2;
-    r = 5 / 3;
+    d = 5 / 8;
     int a = - 5;
 
     for (int i = 0; i to 12; i by i + 1) {
         if (true)
-        then print(r);
+        then print(i);
         fi;
     };
 }

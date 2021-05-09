@@ -20,6 +20,8 @@ public class Controller {
             boolean isInterpretationSuccessful = interpreter.postfixProcessing();
             if (isInterpretationSuccessful) {
                 System.out.println("Interpretation finished successfully!");
+                System.out.println("Program output:");
+                interpreter.outputList.forEach(System.out::print);
             } else {
                 System.out.println("Mistake on interpreter's stage.");
                 System.out.println("Exiting the program...");

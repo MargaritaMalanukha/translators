@@ -2,11 +2,13 @@ package com.lab.syntaxAnalyzer;
 
 import com.lab.lexicalAnalyzer.LexicalAnalyzer;
 import com.lab.lexicalAnalyzer.pojo.IdentifierData;
+import com.lab.lexicalAnalyzer.pojo.LabelData;
 import com.lab.lexicalAnalyzer.pojo.LexerData;
 import com.lab.lexicalAnalyzer.pojo.ValueData;
 import com.lab.syntaxAnalyzer.exceptions.ParserException;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.NoSuchElementException;
 
 
@@ -32,9 +34,17 @@ public class SyntaxAnalyzer {
     private final String indent7 = "\t\t\t\t\t\t";
     private final String indent8 = "\t\t\t\t\t\t\t";
 
+    public ArrayList<IdentifierData> reservedIdentifiers;
+    private ArrayList<LexerData> boolExprPostfixCode;
+
+    public ArrayList<LabelData> tableOfLabels;
+
     public SyntaxAnalyzer(LexicalAnalyzer lexicalAnalyzer) {
         this.lexicalAnalyzer = lexicalAnalyzer;
         postfixCode = new ArrayList<>();
+        tableOfLabels = new ArrayList<>();
+        reservedIdentifiers = new ArrayList<>();
+        boolExprPostfixCode = new ArrayList<>();
     }
 
     public boolean postfixTranslator() {
@@ -126,7 +136,7 @@ public class SyntaxAnalyzer {
             parseAssign();
             parseToken(";", "punct", indent3);
             return true;
-        } /*else if (lexerData.getLexeme().equals("read")) {
+        } else if (lexerData.getLexeme().equals("read")) {
             parseRead();
             parseToken(";", "punct", indent3);
             return true;
@@ -142,7 +152,7 @@ public class SyntaxAnalyzer {
             parseIf();
             parseToken(";", "punct", indent3);
             return true;
-        }*/ else {
+        } else {
             return false;
         }
     }
@@ -186,7 +196,7 @@ public class SyntaxAnalyzer {
         lexerData = getTableOfSymbolsElement();
         if (lexerData.getLexeme().equals("(")) {
             counter++;
-            parseIdentList();
+            parseIdentList("INP"); //трансляція
             parseToken(")", "brackets_op", indent4);
         } else {
             failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
@@ -202,7 +212,7 @@ public class SyntaxAnalyzer {
         lexerData = getTableOfSymbolsElement();
         if (lexerData.getLexeme().equals("(")) {
             counter++;
-            parseIdentList();
+            parseIdentList("OUT");//трансляція
             parseToken(")", "brackets_op", indent4);
         } else {
             failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
@@ -219,18 +229,31 @@ public class SyntaxAnalyzer {
         if (lexerData.getLexeme().equals("(")) {
             counter++;
             printLine(lexerData, indent4);
-            parseIndExpr();
+            parseIndExpr(); //трансляция
             parseToken(";", "punct", indent4);
-            parseBoolExpr();
+            parseBoolExpr(); //трансляция
             parseToken(";", "punct", indent4);
-            parseArithmExpr();
+            parseArithmExpr(); //трансляция
+
+            LabelData m1 = tableOfLabels.get(tableOfLabels.size() - 3);
+            LabelData m3 = tableOfLabels.get(tableOfLabels.size() - 1);
+
             parseToken(")", "brackets_op", indent4);
             parseDoBlock();
+
+            //трансляция parseFor() завершена
+            //добавляем в ПОЛИЗ следующие инструкции:
+            //m1 JUMP m3 :
+            postfixCode.add(new LexerData(m1.getLabel(), "label"));
+            postfixCode.add(new LexerData("JUMP", "jump"));
+            setValLabel(m3);
+            postfixCode.add(new LexerData(m3.getLabel(), "label"));
+            postfixCode.add(new LexerData(":", "colon"));
         } else {
             failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
         }
     }
-    //IfStatement = if ‘(‘ BoolExpr ‘)’ then DoBlock fi
+    //IfStatement = if ‘(‘ BoolExpression ‘)’ then DoBlock fi
     private void parseIf() throws ParserException {
         System.out.println(indent4 + "parseIf():");
         LexerData lexerData = getTableOfSymbolsElement();
@@ -243,9 +266,45 @@ public class SyntaxAnalyzer {
             parseBoolExpression();
             parseToken(")", "brackets_op", indent4);
             parseToken("then", "keyword", indent4);
+
+            //добавляем метку для DoBlock (m1 JF)
+            lexerData = getTableOfSymbolsElement();
+            LabelData labelData = createLabel();
+            postfixCode.add(new LexerData(lexerData.getNumLine(), labelData.getLabel(), "label", lexerData.getNumChar()));
+            postfixCode.add(new LexerData(lexerData.getNumLine(), "JF", "jf", lexerData.getNumChar()));
+
             parseDoBlock();
             parseToken("fi", "keyword", indent4);
+
+            //добавляем метку для выхода из If (m1 :)
+            lexerData = getTableOfSymbolsElement();
+            setValLabel(labelData);
+            postfixCode.add(new LexerData(lexerData.getNumLine(), labelData.getLabel(), "label", lexerData.getNumChar()));
+            postfixCode.add(new LexerData(lexerData.getNumLine(), ":", "colon", lexerData.getNumChar()));
+
         }
+    }
+
+    private LabelData createLabel() throws ParserException {
+        LabelData labelData;
+        int number = tableOfLabels.size() + 1;
+        String lexeme = "m" + number;
+        int value = tableOfLabels.stream().filter(e -> e.getLabel().equals(lexeme)).findFirst().orElse(new LabelData()).getValue();
+        if (value == 0) {
+            labelData = new LabelData(lexeme, 0);
+            tableOfLabels.add(labelData);
+        } else {
+            throw new ParserException("Label error!");
+        }
+        return labelData;
+    }
+
+    private void setValLabel(LabelData label) {
+        tableOfLabels.stream()
+                .filter(e -> e.getLabel().equals(label.getLabel()))
+                .findFirst()
+                .orElseThrow(NoSuchElementException::new)
+                .setValue(postfixCode.size());
     }
 
     /**
@@ -297,16 +356,18 @@ public class SyntaxAnalyzer {
     }
 
     // IdentList = Ident {’,’ Ident}
-    private void parseIdentList() throws ParserException {
+    //функция используется только в read() & print()
+    private void parseIdentList(String postfixLexeme) throws ParserException {
         System.out.println(indent5 + "parseIdentList():");
         LexerData lexerData = getTableOfSymbolsElement();
         int iteration = 0;
-        LexerData finalLexerData = lexerData;
-        while (lexerData.getToken().equals("id") || lexicalAnalyzer.values
-                .stream().anyMatch(e -> e.getValue().equals(finalLexerData.getLexeme()))) {
+        while (lexerData.getToken().equals("id")) {
             iteration++;
             counter++;
             printLine(lexerData, indent5);
+
+            postfixCode.add(lexerData);
+            postfixCode.add(new LexerData(lexerData.getNumLine(), postfixLexeme, postfixLexeme, lexerData.getNumChar()));
 
             lexerData = getTableOfSymbolsElement();
             if (!lexerData.getLexeme().equals(",")) {
@@ -342,8 +403,27 @@ public class SyntaxAnalyzer {
         if (lexerData.getToken().equals("id")) {
             counter++;
             printLine(lexerData, indent5);
+            //добавляем идентификатор в ПОЛИЗ
+            postfixCode.add(lexerData);
             parseToken("=", "assign_op", indent5);
-            parseArithmExpression();
+            parseArithmExpression(); //трансляція
+            //добавляем '=' в ПОЛИЗ
+            postfixCode.add(new LexerData("=", "assign_op"));
+            //парсинг IndExpr завершен
+            //добавляем ПОЛИЗ r1 1 = m1 : r2
+            IdentifierData identifier1 = createReservedIdentifier();
+            postfixCode.add(new LexerData(identifier1.getId(), "id"));
+            postfixCode.add(createValue("1", "int"));
+            postfixCode.add(new LexerData("=", "assign_op"));
+
+            LabelData labelData = createLabel();
+            setValLabel(labelData);
+            postfixCode.add(new LexerData(labelData.getLabel(), "label"));
+            postfixCode.add(new LexerData(":", "colon"));
+
+            IdentifierData identifier2 = createReservedIdentifier();
+            postfixCode.add(new LexerData(identifier2.getId(), "id"));
+
         } else {
             failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
         }
@@ -353,14 +433,52 @@ public class SyntaxAnalyzer {
     // BoolExpr = Ident to ArithmExpression
     private void parseBoolExpr() throws ParserException {
         System.out.println(indent5 + "parseBoolExpr():");
+
+        //переносим ПОЛИЗ BoolExpr на более позднюю стадию (после ArithmExpr)
+        int startId = postfixCode.size();
+
         LexerData lexerData;
         lexerData = getTableOfSymbolsElement();
         parseToken(lexerData.getLexeme(), "id", indent5);
+
+        //добавляем идентификатор в ПОЛИЗ
+        postfixCode.add(lexerData);
+
         parseToken("to", "keyword", indent5);
-        if (!parseArithmExpression()){
+
+        if (!parseArithmExpression()){ //трансляция
             lexerData = getTableOfSymbolsElement();
             failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
         }
+        //добавляем RelOp в ПОЛИЗ (заменяет 'to')
+        postfixCode.add(new LexerData("<", "rel_op"));
+
+        //переносим ПОЛИЗ BoolExpr на более позднюю стадию (после ArithmExpr)
+        int num = postfixCode.size() - startId;
+        for (int i = 0; i < num; i++) {
+            LexerData removed = postfixCode.remove(postfixCode.size() - 1);
+            boolExprPostfixCode.add(removed);
+        }
+        Collections.reverse(boolExprPostfixCode);
+    }
+
+    private IdentifierData createReservedIdentifier() throws ParserException {
+        IdentifierData identifierData;
+        String lexeme = "r" + (reservedIdentifiers.size() + 1);
+        IdentifierData data = lexicalAnalyzer.identifiers
+                .stream().filter(e -> e.getId().equals(lexeme))
+                .findFirst()
+                .orElse(null);
+        if (data == null) {
+            identifierData = new IdentifierData(lexeme, 0);
+            identifierData.setType("int");
+            identifierData.setValue("0");
+            lexicalAnalyzer.identifiers.add(identifierData);
+            reservedIdentifiers.add(identifierData);
+        } else {
+            throw new ParserException("Identifier error!");
+        }
+        return identifierData;
     }
 
     // ArithmExpr = Ident by Ident AddOp | MultOp ArithmExpression
@@ -368,7 +486,11 @@ public class SyntaxAnalyzer {
         System.out.println(indent5 + "parseArithmExpr():");
         LexerData lexerData = getTableOfSymbolsElement();
         parseToken(lexerData.getLexeme(), "id", indent5);
+        LexerData prm = lexerData;
+
         parseToken("by", "keyword", indent5);
+
+        lexerData = getTableOfSymbolsElement();
         parseToken(lexerData.getLexeme(), "id", indent5);
 
         lexerData = getTableOfSymbolsElement();
@@ -379,9 +501,60 @@ public class SyntaxAnalyzer {
             failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
         }
 
-        if (!parseArithmExpression()){
+        if (!parseArithmExpression()){//трансляция
             failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
         }
+
+        LexerData addMultOp = lexerData;
+
+        //парсинг непосредственно ArithmExpr завершен
+        //добавляем следующий код в ПОЛИЗ:
+        // = r1 0 == m2 JF Prm Prm r2 AddOp | MultOp = m2 : r1 0 = Prm
+
+        IdentifierData identifier1 = getR1();
+        IdentifierData identifier2 = getR2();
+
+        postfixCode.add(new LexerData("=", "assign_op"));
+        postfixCode.add(new LexerData(identifier1.getId(), "id"));
+        postfixCode.add(createValue("0", "int"));
+        postfixCode.add(new LexerData("==", "rel_op"));
+
+        LabelData labelData = createLabel();
+        postfixCode.add(new LexerData(labelData.getLabel(), "label"));
+        postfixCode.add(new LexerData("JF", "jf"));
+        postfixCode.add(prm);
+        postfixCode.add(prm);
+        postfixCode.add(new LexerData(identifier2.getId(), "id"));
+        postfixCode.add(new LexerData(addMultOp.getLexeme(), addMultOp.getToken()));
+        postfixCode.add(new LexerData("=", "assign_op"));
+
+        setValLabel(labelData);
+        postfixCode.add(new LexerData(labelData.getLabel(), "label"));
+        postfixCode.add(new LexerData(":", "colon"));
+        postfixCode.add(new LexerData(identifier1.getId(), "id"));
+        postfixCode.add(createValue("0", "int"));
+        postfixCode.add(new LexerData("=", "assign_op"));
+        postfixCode.add(prm);
+
+        //добавляем в ПОЛИЗ BoolExpr
+        postfixCode.addAll(boolExprPostfixCode);
+        boolExprPostfixCode.clear();
+
+        //добавляем следующий код в ПОЛИЗ:
+        //m3 JF
+        labelData = createLabel();
+        postfixCode.add(new LexerData(labelData.getLabel(), "label"));
+        postfixCode.add(new LexerData("JF", "jf"));
+
+    }
+
+    private LexerData createValue(String lexeme, String token) {
+        ValueData valueData = new ValueData();
+        valueData.setConst(lexeme);
+        valueData.setType(token);
+        valueData.setValue(lexeme);
+        lexicalAnalyzer.values.add(valueData);
+        return new LexerData(lexeme, token);
     }
 
     /**
@@ -527,6 +700,14 @@ public class SyntaxAnalyzer {
 
     private LexerData getTableOfSymbolsElement() {
         return lexicalAnalyzer.tableOfSymbols.get(counter);
+    }
+
+    private IdentifierData getR1() {
+        return reservedIdentifiers.get(reservedIdentifiers.size() - 2);
+    }
+
+    private IdentifierData getR2() {
+        return reservedIdentifiers.get(reservedIdentifiers.size() - 1);
     }
 
     public LexicalAnalyzer getLexicalAnalyzer() {

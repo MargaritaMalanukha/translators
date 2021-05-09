@@ -7,7 +7,7 @@ import java.io.IOException;
 public class Main {
 
     public static void main(String[] args) {
-        String input = getFromFile("tests/test10.rty");
+        String input = getFromFile("tests/lexer_tests/test1.rty");
         Controller.process(input);
     }
 

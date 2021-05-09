@@ -1,0 +1,6 @@
+program Example {
+    int a = 100;
+    real b = 13.3;
+
+    print(a, b);
+}
