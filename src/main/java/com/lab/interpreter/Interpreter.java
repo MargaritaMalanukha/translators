@@ -204,12 +204,23 @@ public class Interpreter {
             for (int i = 0; i < identifiers.size(); i++) {
                 if (identifiers.get(i).getId().equals(identifier.getLexeme())) {
                     IdentifierData identifierData = identifiers.get(i);
+
+                    if (lexValue.getToken().equals("id")) {
+                        LexerData finalLexValue = lexValue;
+                        IdentifierData idToAssign = identifiers.stream()
+                                .filter(e -> e.getId().equals(finalLexValue.getLexeme()))
+                                .findFirst().orElseThrow(NoSuchElementException::new);
+                        lexValue = new LexerData(idToAssign.getValue(), idToAssign.getType());
+                    }
+
                     //если идентификатор и значение имеют разный тип, но при этом это не real и int
-                    if (!identifierData.getType().equals(lexValue.getToken()) && !(identifierData.getType().equals("real") && lexValue.getToken().equals("int"))) {
+                    if (!identifierData.getType().equals(lexValue.getToken()) && !(identifierData.getType().equals("real") && lexValue.getToken().equals("int"))
+                    && !lexValue.getToken().equals("id")) {
                         LexerData lexerData1 = new LexerData();
                         lexerData1.setToken(identifierData.getType());
                         failRunTime("wrong type", lexerData1, lexValue, lexerData);
                     }
+
                     identifierData.setValue(lexValue.getLexeme());
                     isChanged = true;
                 }
@@ -459,7 +470,4 @@ public class Interpreter {
             values.add(new ValueData(value, 0, type, value));
         }
     }
-
-
-
 }

@@ -68,7 +68,6 @@ public class AnalyzerTables {
         put("if", "keyword");
         put("then", "keyword");
         put("fi", "keyword");
-        put("to", "keyword"); put("by", "keyword");
         put("true", "boolval"); put("false", "boolval");
         put("=", "assign_op");
         put("+", "add_op"); put("-", "add_op");
@@ -83,7 +82,4 @@ public class AnalyzerTables {
         put(".", "punct"); put(",", "punct");
         put(":", "punct"); put(";", "punct");
     }};
-
-
-
 }

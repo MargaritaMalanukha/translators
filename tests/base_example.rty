@@ -10,9 +10,9 @@ program ExampleProgram {
 
     int rty = x * 2;
     d = 5 / 8;
-    int a = - 5;
+    int a = -5;
 
-    for (int i = 0; i to 12; i by i + 1) {
+    for (int i = 0; i < 12; i + 1) {
         if (true)
         then print(i);
         fi;

@@ -16,10 +16,10 @@ IdenttList = Ident {’,’ Ident}
 IfStatement = if ‘(‘ BoolExpression ‘)’ then DoBlock fi
 DoBlock = Statement | ’{’ StatementList ’}’
 
-ForStatement = for ‘(’ IndExpr; BoolExpr; ArithmExpr ‘)’ DoBlock
+ForStatement = for ‘(’ IndExpr;BoolExpr; ArithmExpr ‘)’ DoBlock
 IndExpr = Type Ident ’=’ ArithmExpression
-BoolExpr = Ident to ArithmExpression
-ArithmExpr = Ident by Ident AddOp | MultOp ArithmExpression
+BoolExpr= ArithmExpression RelOp ArithmExpression
+ArithmExpr = ArithmExpression
 
 Expression = ArithmExpression | BoolExpression
 BoolExpression = BoolConst | (ArithmExpression RelOp ArithmExpression {BoolOp BoolExpression})

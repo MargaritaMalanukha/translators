@@ -35,7 +35,10 @@ public class SyntaxAnalyzer {
     private final String indent8 = "\t\t\t\t\t\t\t";
 
     public ArrayList<IdentifierData> reservedIdentifiers;
-    private ArrayList<LexerData> boolExprPostfixCode;
+    //используется для переноса постфиксного кода из BoolExpr в ArithmExpr
+    private final ArrayList<LexerData> boolExprPostfixCode;
+    //используется для переноса переменной из IndExpr в постфиксный код ArithmExpr
+    private LexerData prm;
 
     public ArrayList<LabelData> tableOfLabels;
 
@@ -403,6 +406,8 @@ public class SyntaxAnalyzer {
         if (lexerData.getToken().equals("id")) {
             counter++;
             printLine(lexerData, indent5);
+            //обновляем глобальную переменную для идентификации параметра в других частях кода
+            prm = lexerData;
             //добавляем идентификатор в ПОЛИЗ
             postfixCode.add(lexerData);
             parseToken("=", "assign_op", indent5);
@@ -430,28 +435,27 @@ public class SyntaxAnalyzer {
 
     }
 
-    // BoolExpr = Ident to ArithmExpression
+    // BoolExpr = ArithmExpression RelOp ArithmExpression
     private void parseBoolExpr() throws ParserException {
         System.out.println(indent5 + "parseBoolExpr():");
 
         //переносим ПОЛИЗ BoolExpr на более позднюю стадию (после ArithmExpr)
         int startId = postfixCode.size();
 
-        LexerData lexerData;
-        lexerData = getTableOfSymbolsElement();
-        parseToken(lexerData.getLexeme(), "id", indent5);
+        LexerData lexerData = getTableOfSymbolsElement();
+        if (!parseArithmExpression()) { //трансляция
+            failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
+        }
 
-        //добавляем идентификатор в ПОЛИЗ
-        postfixCode.add(lexerData);
-
-        parseToken("to", "keyword", indent5);
+        LexerData relOp = getTableOfSymbolsElement();
+        parseToken(relOp.getLexeme(), "rel_op", indent5);
 
         if (!parseArithmExpression()){ //трансляция
             lexerData = getTableOfSymbolsElement();
             failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
         }
-        //добавляем RelOp в ПОЛИЗ (заменяет 'to')
-        postfixCode.add(new LexerData("<", "rel_op"));
+        //добавляем RelOp в ПОЛИЗ
+        postfixCode.add(relOp);
 
         //переносим ПОЛИЗ BoolExpr на более позднюю стадию (после ArithmExpr)
         int num = postfixCode.size() - startId;
@@ -481,35 +485,18 @@ public class SyntaxAnalyzer {
         return identifierData;
     }
 
-    // ArithmExpr = Ident by Ident AddOp | MultOp ArithmExpression
+    // ArithmExpr = ArithmExpression
     private void parseArithmExpr() throws ParserException {
         System.out.println(indent5 + "parseArithmExpr():");
+
         LexerData lexerData = getTableOfSymbolsElement();
-        parseToken(lexerData.getLexeme(), "id", indent5);
-        LexerData prm = lexerData;
-
-        parseToken("by", "keyword", indent5);
-
-        lexerData = getTableOfSymbolsElement();
-        parseToken(lexerData.getLexeme(), "id", indent5);
-
-        lexerData = getTableOfSymbolsElement();
-        if (lexerData.getToken().equals("add_op") || lexerData.getToken().equals("mult_op")) {
-            counter++;
-            printLine(lexerData, indent5);
-        } else {
-            failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
-        }
-
         if (!parseArithmExpression()){//трансляция
             failParse(lexerData.getNumLine(), lexerData.getLexeme(), lexerData.getToken());
         }
 
-        LexerData addMultOp = lexerData;
-
         //парсинг непосредственно ArithmExpr завершен
         //добавляем следующий код в ПОЛИЗ:
-        // = r1 0 == m2 JF Prm Prm r2 AddOp | MultOp = m2 : r1 0 = Prm
+        // = r1 0 == m2 JF Prm r2 = m2 : r1 0 = Prm
 
         IdentifierData identifier1 = getR1();
         IdentifierData identifier2 = getR2();
@@ -523,9 +510,7 @@ public class SyntaxAnalyzer {
         postfixCode.add(new LexerData(labelData.getLabel(), "label"));
         postfixCode.add(new LexerData("JF", "jf"));
         postfixCode.add(prm);
-        postfixCode.add(prm);
         postfixCode.add(new LexerData(identifier2.getId(), "id"));
-        postfixCode.add(new LexerData(addMultOp.getLexeme(), addMultOp.getToken()));
         postfixCode.add(new LexerData("=", "assign_op"));
 
         setValLabel(labelData);
