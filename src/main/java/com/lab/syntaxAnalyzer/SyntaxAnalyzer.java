@@ -39,6 +39,8 @@ public class SyntaxAnalyzer {
     private final ArrayList<LexerData> boolExprPostfixCode;
     //используется для переноса переменной из IndExpr в постфиксный код ArithmExpr
     private LexerData prm;
+    //используется для переноса exp_op в постфиксный код позже, для формирования правоасоциативной операции
+    private ArrayList<LexerData> expOpPostfixCode;
 
     public ArrayList<LabelData> tableOfLabels;
 
@@ -48,6 +50,7 @@ public class SyntaxAnalyzer {
         tableOfLabels = new ArrayList<>();
         reservedIdentifiers = new ArrayList<>();
         boolExprPostfixCode = new ArrayList<>();
+        expOpPostfixCode = new ArrayList<>();
     }
 
     public boolean postfixTranslator() {
@@ -629,11 +632,21 @@ public class SyntaxAnalyzer {
                 printLine(lexerData, indent7);
                 parseFactor();
                 //Добавить MultOp|ExpOp в ПОЛИЗ
-                postfixCode.add(lexerData);
+                if (lexerData.getToken().equals("exp_op")) {
+                    //переносим знак возведения в степень
+                    expOpPostfixCode.add(lexerData);
+                } else  {
+                    postfixCode.addAll(expOpPostfixCode);
+                    expOpPostfixCode.clear();
+                    postfixCode.add(lexerData);
+                }
+
             } else {
                 break;
             }
         }
+        postfixCode.addAll(expOpPostfixCode);
+        expOpPostfixCode.clear();
     }
 
     // Factor = Ident | Literal | ’(’ ArithmExpression ’)’

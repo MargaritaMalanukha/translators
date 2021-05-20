@@ -1,7 +1,4 @@
 program ExampleProgram {
-    for (int i = 3; i < 100; i * 3) {
-        for (int j = 3; j < 100; j ^ 3) {
-            print(i, j);
-        };
-    };
+    real r = 2 ^ 3 ^ 3;
+    real k = 2 ^ (3 ^ 3);
 }
